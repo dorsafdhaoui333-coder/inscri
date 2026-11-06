@@ -1,0 +1,6 @@
+{
+  "name": "Portail Mastère Tunisie - Inscription & Candidature",
+  "description": "Plateforme officielle de candidature et d'inscription aux mastères universitaires de recherche et professionnels : catalogue des formations, simulateur de score, dépôt de dossier et suivi en ligne.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
