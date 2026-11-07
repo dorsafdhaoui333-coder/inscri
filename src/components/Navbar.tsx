@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, ShieldCheck, FileText, Calculator, Compass, Search } from 'lucide-react';
+import { GraduationCap, ShieldCheck, FileText, Calculator, Compass, Search, Mail } from 'lucide-react';
 
 interface NavbarProps {
   activeTab: 'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission' | 'uml';
@@ -7,6 +7,8 @@ interface NavbarProps {
   lang: 'fr' | 'ar' | 'tn';
   setLang: (lang: 'fr' | 'ar' | 'tn') => void;
   applicationsCount: number;
+  emailCount?: number;
+  onOpenEmailsModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -15,6 +17,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   setLang,
   applicationsCount,
+  emailCount = 0,
+  onOpenEmailsModal,
 }) => {
   const getNavLabel = (key: string) => {
     switch (lang) {
@@ -166,6 +170,22 @@ export const Navbar: React.FC<NavbarProps> = ({
                 عربي
               </button>
             </div>
+
+            {/* Email Notification Simulator Quick Button */}
+            {onOpenEmailsModal && (
+              <button
+                onClick={onOpenEmailsModal}
+                className="p-2 text-slate-600 hover:text-sky-700 bg-slate-100 hover:bg-sky-50 rounded-lg relative transition-colors"
+                title="Simulateur d'emails de confirmation"
+              >
+                <Mail className="w-4 h-4" />
+                {emailCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center font-mono">
+                    {emailCount}
+                  </span>
+                )}
+              </button>
+            )}
 
             {/* Primary Action Button */}
             <button

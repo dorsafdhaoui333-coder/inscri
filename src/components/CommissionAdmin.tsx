@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { CandidateApplication, MastereProgram, ApplicationStatus } from '../types/mastere';
-import { ShieldCheck, Download, Search, Filter, CheckCircle2, Clock, Users, Award, ExternalLink, Calendar, MapPin } from 'lucide-react';
+import { ShieldCheck, Download, Search, Filter, CheckCircle2, Clock, Users, Award, ExternalLink, Calendar, MapPin, TrendingUp, ChevronDown, ChevronUp, GitCompare, CheckSquare, ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react';
+import { CommissionAnalytics } from './CommissionAnalytics';
+import { DossierComparisonModal } from './DossierComparisonModal';
 
 interface CommissionAdminProps {
   applications: CandidateApplication[];
@@ -21,12 +23,54 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState<string>('');
   const [activeApp, setActiveApp] = useState<CandidateApplication | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(true);
+
+  // Dynamic sorting by total score
+  const [scoreSortOrder, setScoreSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  const toggleScoreSort = () => {
+    setScoreSortOrder(prev => (prev === 'desc' ? 'asc' : 'desc'));
+  };
 
   // Status edit modal state
   const [editStatus, setEditStatus] = useState<ApplicationStatus>('en_examen');
   const [editNote, setEditNote] = useState<string>('');
   const [editInterviewDate, setEditInterviewDate] = useState<string>('');
   const [editInterviewRoom, setEditInterviewRoom] = useState<string>('');
+
+  // Dossier Comparison state
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState<boolean>(false);
+  const [compareAppA, setCompareAppA] = useState<CandidateApplication | null>(null);
+  const [compareAppB, setCompareAppB] = useState<CandidateApplication | null>(null);
+  const [selectedForCompareIds, setSelectedForCompareIds] = useState<string[]>([]);
+
+  const handleToggleSelectForCompare = (appId: string) => {
+    setSelectedForCompareIds(prev => {
+      if (prev.includes(appId)) {
+        return prev.filter(id => id !== appId);
+      }
+      if (prev.length >= 2) {
+        return [prev[1], appId];
+      }
+      return [...prev, appId];
+    });
+  };
+
+  const handleLaunchComparison = (app1?: CandidateApplication, app2?: CandidateApplication) => {
+    const first = app1 || applications.find(a => a.id === selectedForCompareIds[0]) || applications[0] || null;
+    const second = app2 || applications.find(a => a.id === selectedForCompareIds[1]) || (first && applications.find(a => a.id !== first.id)) || applications[1] || applications[0] || null;
+    setCompareAppA(first);
+    setCompareAppB(second);
+    setIsCompareModalOpen(true);
+  };
+
+  // Official merit rank (always based on descending total score as per Ministry rules)
+  const officialRankMap = useMemo(() => {
+    const sorted = [...applications].sort((a, b) => b.score.totalScore - a.score.totalScore);
+    const map = new Map<string, number>();
+    sorted.forEach((app, idx) => map.set(app.id, idx + 1));
+    return map;
+  }, [applications]);
 
   const filteredApps = useMemo(() => {
     return applications
@@ -46,8 +90,14 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
 
         return matchMastere && matchStatus && matchSearch;
       })
-      .sort((a, b) => b.score.totalScore - a.score.totalScore); // Sort by highest score first!
-  }, [applications, selectedMastereId, statusFilter, search]);
+      .sort((a, b) => {
+        if (scoreSortOrder === 'desc') {
+          return b.score.totalScore - a.score.totalScore;
+        } else {
+          return a.score.totalScore - b.score.totalScore;
+        }
+      });
+  }, [applications, selectedMastereId, statusFilter, search, scoreSortOrder]);
 
   const handleOpenEdit = (app: CandidateApplication) => {
     setActiveApp(app);
@@ -65,9 +115,10 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
 
   // Export to CSV
   const handleExportCSV = () => {
-    const headers = ['Rang', 'ID Dossier', 'CIN', 'Nom', 'Prenom', 'Etablissement', 'Licence', 'Score Total', 'Statut', 'Voeu 1'];
+    const headers = ['Ordre Trié', 'Rang Mérite Officiel', 'ID Dossier', 'CIN', 'Nom', 'Prenom', 'Etablissement', 'Licence', 'Score Total', 'Statut', 'Voeu 1'];
     const rows = filteredApps.map((app, index) => [
       index + 1,
+      officialRankMap.get(app.id) || index + 1,
       app.id,
       app.candidate.cin,
       app.candidate.nom,
@@ -117,18 +168,63 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={handleExportCSV}
-          className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-colors shadow-2xs flex items-center gap-2 self-start sm:self-auto"
-        >
-          <Download className="w-4 h-4 text-slate-600" />
-          <span>Exporter le Classement (CSV)</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => handleLaunchComparison()}
+            className="px-3.5 py-2 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl transition-colors shadow-2xs flex items-center gap-2"
+            title="Comparer deux candidatures côte-à-côte"
+          >
+            <GitCompare className="w-4 h-4 text-purple-700" />
+            <span>
+              {selectedForCompareIds.length === 2
+                ? 'Comparer les 2 sélectionnés'
+                : selectedForCompareIds.length === 1
+                ? 'Comparer (1 sélectionné)'
+                : 'Comparer 2 Dossiers'}
+            </span>
+            {selectedForCompareIds.length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-mono flex items-center justify-center font-bold">
+                {selectedForCompareIds.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => setShowAnalytics(!showAnalytics)}
+            className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
+            title="Afficher ou masquer les graphiques Recharts"
+          >
+            <TrendingUp className="w-4 h-4 text-sky-600" />
+            <span>{showAnalytics ? 'Masquer Statistiques' : 'Afficher Statistiques'}</span>
+            {showAnalytics ? (
+              <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+            )}
+          </button>
+
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-xl transition-colors shadow-2xs flex items-center gap-2"
+          >
+            <Download className="w-4 h-4 text-slate-600" />
+            <span>Exporter le Classement (CSV)</span>
+          </button>
+        </div>
       </div>
+
+      {/* Recharts Analytics Visualization: Distribution Recherche vs Professionnel */}
+      {showAnalytics && (
+        <CommissionAnalytics
+          applications={applications}
+          masteres={masteres}
+          lang={lang}
+        />
+      )}
 
       {/* Filter and Master Program Selector */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Master Program Dropdown */}
           <div>
             <label className="text-xs text-slate-600 block mb-1 font-semibold">
@@ -184,7 +280,85 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
               />
             </div>
           </div>
+
+          {/* Dynamic Score Sorting Control */}
+          <div>
+            <label className="text-xs text-slate-600 block mb-1 font-semibold flex items-center justify-between">
+              <span>Tri par Score Total</span>
+              <span className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                scoreSortOrder === 'desc' ? 'bg-sky-50 text-sky-700 border border-sky-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}>
+                {scoreSortOrder === 'desc' ? '20 → 0' : '0 → 20'}
+              </span>
+            </label>
+            <div className="flex rounded-lg border border-slate-300 p-0.5 bg-slate-50">
+              <button
+                type="button"
+                onClick={() => setScoreSortOrder('desc')}
+                className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                  scoreSortOrder === 'desc'
+                    ? 'bg-white text-sky-800 shadow-2xs font-bold border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Classer par score décroissant (les plus hauts scores en premier)"
+              >
+                <ArrowDown className="w-3.5 h-3.5 text-sky-600" />
+                <span>Décroissant</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setScoreSortOrder('asc')}
+                className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold flex items-center justify-center gap-1 transition-all ${
+                  scoreSortOrder === 'asc'
+                    ? 'bg-white text-amber-800 shadow-2xs font-bold border border-slate-200'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="Classer par score croissant (les plus bas scores en premier)"
+              >
+                <ArrowUp className="w-3.5 h-3.5 text-amber-600" />
+                <span>Croissant</span>
+              </button>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Sorting & Filter Summary Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-1 text-xs text-slate-600">
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-900">
+            {filteredApps.length} candidature{filteredApps.length > 1 ? 's' : ''} affichée{filteredApps.length > 1 ? 's' : ''}
+          </span>
+          <span className="text-slate-300">·</span>
+          <span className="flex items-center gap-1">
+            Classement actuel :
+            <strong className={`inline-flex items-center gap-0.5 font-bold ${
+              scoreSortOrder === 'desc' ? 'text-sky-700' : 'text-amber-700'
+            }`}>
+              {scoreSortOrder === 'desc' ? (
+                <>
+                  <ArrowDown className="w-3.5 h-3.5 text-sky-600" />
+                  Score Décroissant (Max → Min)
+                </>
+              ) : (
+                <>
+                  <ArrowUp className="w-3.5 h-3.5 text-amber-600" />
+                  Score Croissant (Min → Max)
+                </>
+              )}
+            </strong>
+          </span>
+        </div>
+
+        <button
+          type="button"
+          onClick={toggleScoreSort}
+          className="text-xs text-sky-700 hover:text-sky-800 hover:underline font-semibold inline-flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+          title="Inverser le sens du tri par score"
+        >
+          <ArrowUpDown className="w-3.5 h-3.5 text-sky-600" />
+          <span>Inverser le sens du tri ({scoreSortOrder === 'desc' ? 'passer en Croissant' : 'passer en Décroissant'})</span>
+        </button>
       </div>
 
       {/* Candidate Ranking Table */}
@@ -193,11 +367,35 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase tracking-wider text-[11px] font-mono">
-                <th className="py-3 px-4 text-center">Rang</th>
+                <th className="py-3 px-3 text-center w-12" title="Sélectionner pour comparaison (max 2)">Comp.</th>
+                <th className="py-3 px-4 text-center">Rang Trié</th>
                 <th className="py-3 px-4">Candidat & CIN</th>
                 <th className="py-3 px-4">Cursus LMD d’Origine</th>
                 <th className="py-3 px-4">Vœu n°1 Choisi</th>
-                <th className="py-3 px-4 text-right">Score Calculé</th>
+                <th 
+                  className="py-3 px-4 text-right cursor-pointer select-none group hover:bg-slate-100 transition-colors"
+                  onClick={toggleScoreSort}
+                  title={`Cliquer pour trier par score (${scoreSortOrder === 'desc' ? 'Actuellement Décroissant ↓' : 'Actuellement Croissant ↑'})`}
+                  aria-sort={scoreSortOrder === 'desc' ? 'descending' : 'ascending'}
+                >
+                  <div className="inline-flex items-center justify-end gap-1.5 font-bold text-slate-800 group-hover:text-sky-700">
+                    <span>Score Calculé</span>
+                    <span className={`p-1 rounded-md transition-all ${
+                      scoreSortOrder === 'desc' 
+                        ? 'bg-sky-100 text-sky-800 ring-1 ring-sky-300' 
+                        : 'bg-amber-100 text-amber-800 ring-1 ring-amber-300'
+                    }`}>
+                      {scoreSortOrder === 'desc' ? (
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      ) : (
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      )}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 block font-normal text-right">
+                    {scoreSortOrder === 'desc' ? 'Max → Min (cliquer pour inverser)' : 'Min → Max (cliquer pour inverser)'}
+                  </span>
+                </th>
                 <th className="py-3 px-4 text-center">Statut Jury</th>
                 <th className="py-3 px-4 text-center">Actions</th>
               </tr>
@@ -205,17 +403,54 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
             <tbody className="divide-y divide-slate-100">
               {filteredApps.map((app, index) => {
                 const statusMeta = getStatusLabel(app.status);
-                const isFirstRank = index === 0;
+                const officialRank = officialRankMap.get(app.id) || index + 1;
+                const isTopScore = scoreSortOrder === 'desc' ? index === 0 : index === filteredApps.length - 1;
+                const isSelectedForCompare = selectedForCompareIds.includes(app.id);
 
                 return (
-                  <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                  <tr 
+                    key={app.id} 
+                    className={`transition-colors ${
+                      isSelectedForCompare 
+                        ? 'bg-purple-50/70 hover:bg-purple-50' 
+                        : 'hover:bg-slate-50/80'
+                    }`}
+                  >
+                    {/* Compare Selection Checkbox */}
+                    <td className="py-3.5 px-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleSelectForCompare(app.id)}
+                        className={`w-7 h-7 rounded-lg border transition-all inline-flex items-center justify-center ${
+                          isSelectedForCompare
+                            ? 'bg-purple-600 text-white border-purple-600 shadow-2xs ring-2 ring-purple-300'
+                            : 'bg-white text-slate-300 border-slate-300 hover:border-purple-400 hover:text-purple-600'
+                        }`}
+                        title={
+                          isSelectedForCompare
+                            ? 'Désélectionner de la comparaison'
+                            : 'Sélectionner pour comparer (max 2)'
+                        }
+                        aria-label={`Sélectionner ${app.candidate.prenom} ${app.candidate.nom} pour comparaison`}
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                      </button>
+                    </td>
+
                     {/* Rank */}
-                    <td className="py-3.5 px-4 text-center font-mono font-bold">
-                      <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs ${
-                        isFirstRank ? 'bg-amber-100 text-amber-800' : 'text-slate-600'
-                      }`}>
-                        {index + 1}
-                      </span>
+                    <td className="py-3.5 px-4 text-center font-mono">
+                      <div className="flex flex-col items-center">
+                        <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
+                          isTopScore ? 'bg-amber-100 text-amber-800 ring-1 ring-amber-300' : 'text-slate-700 bg-slate-100'
+                        }`}>
+                          {index + 1}
+                        </span>
+                        {scoreSortOrder === 'asc' && (
+                          <span className="text-[9px] text-slate-400 font-mono mt-0.5" title="Rang officiel selon le score de mérite">
+                            Mérite #{officialRank}
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Candidate */}
@@ -248,9 +483,11 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
                       </div>
                     </td>
 
-                    {/* Total Score */}
+                    {/* Total Score with dynamic sort styling */}
                     <td className="py-3.5 px-4 text-right">
-                      <span className="font-bold font-mono text-sm text-slate-900 tabular-nums">
+                      <span className={`font-bold font-mono text-sm tabular-nums ${
+                        isTopScore ? 'text-amber-700 font-extrabold' : 'text-slate-900'
+                      }`}>
                         {app.score.totalScore.toFixed(2)}
                       </span>
                       <span className="text-slate-400 text-[10px] block font-mono">/ 20</span>
@@ -264,7 +501,15 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
                     </td>
 
                     {/* Actions */}
-                    <td className="py-3.5 px-4 text-center space-x-2">
+                    <td className="py-3.5 px-4 text-center space-x-1.5 whitespace-nowrap">
+                      <button
+                        onClick={() => handleLaunchComparison(app)}
+                        className="px-2 py-1 text-xs font-semibold text-purple-700 bg-purple-50 hover:bg-purple-100 rounded-md transition-colors inline-flex items-center gap-1"
+                        title="Comparer ce dossier côte-à-côte avec un autre"
+                      >
+                        <GitCompare className="w-3 h-3" />
+                        <span>Comparer</span>
+                      </button>
                       <button
                         onClick={() => handleOpenEdit(app)}
                         className="px-2.5 py-1 text-xs font-semibold text-sky-700 bg-sky-50 hover:bg-sky-100 rounded-md transition-colors"
@@ -384,6 +629,18 @@ export const CommissionAdmin: React.FC<CommissionAdminProps> = ({
           </div>
         </div>
       )}
+
+      {/* Side-by-Side Dossier Comparison Modal */}
+      <DossierComparisonModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        applications={applications}
+        initialAppA={compareAppA}
+        initialAppB={compareAppB}
+        onUpdateStatus={onUpdateStatus}
+        onOpenReceipt={onOpenReceipt}
+        lang={lang}
+      />
     </section>
   );
 };

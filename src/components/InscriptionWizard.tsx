@@ -14,7 +14,8 @@ import {
   BookOpen, 
   ShieldCheck, 
   HelpCircle,
-  Clock
+  Clock,
+  Mail
 } from 'lucide-react';
 import { 
   MastereProgram, 
@@ -945,6 +946,19 @@ export const InscriptionWizard: React.FC<InscriptionWizardProps> = ({
                     <span className="text-slate-500">({w.faculty})</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* Email Notification Preview Notice */}
+            <div className="p-3.5 bg-sky-50 rounded-xl border border-sky-200/80 flex items-center gap-3 text-xs text-sky-950">
+              <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0">
+                <Mail className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-bold text-sky-900 block">Notification électronique automatique :</span>
+                <span className="text-[11px] text-sky-800 leading-snug">
+                  Un email de confirmation officiel contenant votre numéro de dossier unique et le récapitulatif de votre score sera automatiquement expédié à <strong className="font-mono">{candidate.email || 'votre adresse email'}</strong>.
+                </span>
               </div>
             </div>
 
