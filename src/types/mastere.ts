@@ -127,17 +127,3 @@ export interface CandidateApplication {
   dateEntretien?: string;
   salleEntretien?: string;
 }
-
-export interface SimulatedEmail {
-  id: string;
-  applicationId: string;
-  recipientName: string;
-  recipientEmail: string;
-  sender: string;
-  subject: string;
-  sentAt: string;
-  candidateCin: string;
-  scoreTotal: number;
-  wishes: ApplicationWish[];
-  isRead: boolean;
-}

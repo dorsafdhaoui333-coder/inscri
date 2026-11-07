@@ -8,44 +8,12 @@ import { SuiviDossier } from './components/SuiviDossier';
 import { CommissionAdmin } from './components/CommissionAdmin';
 import { FaqSection } from './components/FaqSection';
 import { ReceiptModal } from './components/ReceiptModal';
-import { UmlConception } from './components/UmlConception';
-import { EmailNotificationModal } from './components/EmailNotificationModal';
-import { EmailToastNotification } from './components/EmailToastNotification';
 import { MOCK_MASTERES, INITIAL_APPLICATIONS } from './data/mockMasteres';
-import { CandidateApplication, MastereProgram, LicenceInfo, ApplicationStatus, SimulatedEmail } from './types/mastere';
-import { GraduationCap, ShieldCheck, FileCheck2, HeartHandshake, Mail } from 'lucide-react';
-
-const INITIAL_SIMULATED_EMAILS: SimulatedEmail[] = [
-  {
-    id: 'email-init-1',
-    applicationId: 'MST-2026-TUN-08421',
-    recipientName: 'Amine Ben Salem',
-    recipientEmail: 'amine.bensalem@gmail.com',
-    sender: 'Plateforme Nationale des Mastères <noreply.mastere@mesrs.tn>',
-    subject: '[MastereTN] Confirmation de dépôt - Candidature n° MST-2026-TUN-08421 validée',
-    sentAt: '2026-06-28 10:14',
-    candidateCin: '09876543',
-    scoreTotal: 18.93,
-    wishes: INITIAL_APPLICATIONS[0].wishes,
-    isRead: true,
-  },
-  {
-    id: 'email-init-2',
-    applicationId: 'MST-2026-TUN-09153',
-    recipientName: 'Sarra Trabelsi',
-    recipientEmail: 'sarra.trabelsi@yahoo.fr',
-    sender: 'Plateforme Nationale des Mastères <noreply.mastere@mesrs.tn>',
-    subject: '[MastereTN] Confirmation de dépôt - Candidature n° MST-2026-TUN-09153 validée',
-    sentAt: '2026-06-29 14:22',
-    candidateCin: '12345678',
-    scoreTotal: 17.54,
-    wishes: INITIAL_APPLICATIONS[1].wishes,
-    isRead: true,
-  },
-];
+import { CandidateApplication, MastereProgram, LicenceInfo, ApplicationStatus } from './types/mastere';
+import { GraduationCap, ShieldCheck, FileCheck2, HeartHandshake } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission' | 'uml'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission'>('home');
   const [lang, setLang] = useState<'fr' | 'ar' | 'tn'>('fr');
   
   // Persistent applications state
@@ -79,29 +47,6 @@ export default function App() {
   // Active receipt modal
   const [activeReceipt, setActiveReceipt] = useState<CandidateApplication | null>(null);
 
-  // Simulated emails state
-  const [simulatedEmails, setSimulatedEmails] = useState<SimulatedEmail[]>(() => {
-    try {
-      const stored = localStorage.getItem('mastere_simulated_emails');
-      if (stored) return JSON.parse(stored);
-    } catch (e) {
-      console.warn('Failed to load stored emails', e);
-    }
-    return INITIAL_SIMULATED_EMAILS;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('mastere_simulated_emails', JSON.stringify(simulatedEmails));
-    } catch (e) {
-      console.warn('Failed to save emails', e);
-    }
-  }, [simulatedEmails]);
-
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
-  const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
-  const [latestToastEmail, setLatestToastEmail] = useState<SimulatedEmail | null>(null);
-
   // Handlers
   const handleApplyToMastere = (mastere: MastereProgram) => {
     setPreselectedMastere(mastere);
@@ -118,37 +63,8 @@ export default function App() {
   const handleApplicationSuccess = (newApp: CandidateApplication) => {
     setApplications(prev => [newApp, ...prev]);
     setActiveReceipt(newApp);
-
-    // Create and dispatch fictional email confirmation
-    const now = new Date();
-    const formattedDate = `${now.toISOString().split('T')[0]} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const newEmail: SimulatedEmail = {
-      id: `email-${Date.now()}`,
-      applicationId: newApp.id,
-      recipientName: `${newApp.candidate.prenom} ${newApp.candidate.nom}`,
-      recipientEmail: newApp.candidate.email,
-      sender: 'Plateforme Nationale des Mastères <noreply.mastere@mesrs.tn>',
-      subject: `[MastereTN] Confirmation de dépôt - Candidature n° ${newApp.id} validée`,
-      sentAt: formattedDate,
-      candidateCin: newApp.candidate.cin,
-      scoreTotal: newApp.score.totalScore,
-      wishes: newApp.wishes,
-      isRead: false,
-    };
-
-    setSimulatedEmails(prev => [newEmail, ...prev]);
-    setLatestToastEmail(newEmail);
-    setSelectedEmailId(newEmail.id);
-
     setActiveTab('suivi');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleViewReceiptFromEmail = (appId: string) => {
-    const found = applications.find(a => a.id === appId);
-    if (found) {
-      setActiveReceipt(found);
-    }
   };
 
   const handleUpdateStatus = (
@@ -184,8 +100,6 @@ export default function App() {
         lang={lang}
         setLang={setLang}
         applicationsCount={applications.length}
-        emailCount={simulatedEmails.length}
-        onOpenEmailsModal={() => setIsEmailModalOpen(true)}
       />
 
       {/* Main View Router */}
@@ -228,35 +142,6 @@ export default function App() {
                 onUseScoreForApplication={handleUseScoreForApplication}
                 lang={lang}
               />
-            </div>
-
-            {/* Academic UML Conception Banner for University project */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="p-6 bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-lg border border-purple-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2 text-xs font-mono text-purple-300 font-semibold uppercase tracking-wider">
-                    <span>Projet Académique & PFE</span>
-                    <span>·</span>
-                    <span>UML 2.5</span>
-                  </div>
-                  <h3 className="text-lg font-bold font-display">
-                    Diagramme de Cas d’Utilisation & Diagramme de Classes complets
-                  </h3>
-                  <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                    Visualisez les schémas vectoriels SVG, exportez le code source PlantUML / Mermaid pour votre rapport, et consultez les fiches descriptives détaillées exigées par les jurys universitaires.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    setActiveTab('uml');
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                  }}
-                  className="px-5 py-2.5 bg-purple-500 hover:bg-purple-400 text-white font-semibold text-xs rounded-xl transition-all shadow-md shrink-0 flex items-center gap-2"
-                >
-                  <span>Ouvrir l’Espace UML</span>
-                  <span>→</span>
-                </button>
-              </div>
             </div>
 
             {/* FAQ Section */}
@@ -319,12 +204,6 @@ export default function App() {
             />
           </div>
         )}
-
-        {activeTab === 'uml' && (
-          <div className="py-8">
-            <UmlConception lang={lang} />
-          </div>
-        )}
       </main>
 
       {/* Official Printable Receipt Modal */}
@@ -336,30 +215,6 @@ export default function App() {
           setActiveTab('suivi');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
-      />
-
-      {/* Simulated Email Confirmation Webmail Modal */}
-      <EmailNotificationModal
-        isOpen={isEmailModalOpen}
-        onClose={() => setIsEmailModalOpen(false)}
-        emails={simulatedEmails}
-        selectedEmailId={selectedEmailId}
-        onViewReceipt={handleViewReceiptFromEmail}
-        onGoToTracking={() => {
-          setIsEmailModalOpen(false);
-          setActiveTab('suivi');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
-      />
-
-      {/* Interactive Toast Alert when a confirmation email is dispatched */}
-      <EmailToastNotification
-        email={latestToastEmail}
-        onOpenEmail={(emailId) => {
-          setSelectedEmailId(emailId);
-          setIsEmailModalOpen(true);
-        }}
-        onClose={() => setLatestToastEmail(null)}
       />
 
       {/* Institutional Footer */}
@@ -417,17 +272,6 @@ export default function App() {
                 <li>
                   <button onClick={() => { setActiveTab('suivi'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="hover:text-white transition-colors">
                     Suivi de Dossier par CIN
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => { setActiveTab('uml'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-purple-400 hover:text-purple-300 font-semibold transition-colors">
-                    ★ Conception UML (Use Case & Classes)
-                  </button>
-                </li>
-                <li>
-                  <button onClick={() => setIsEmailModalOpen(true)} className="text-sky-400 hover:text-sky-300 font-semibold transition-colors flex items-center gap-1.5">
-                    <span>✉ Boîte Emails de Confirmation</span>
-                    <span className="text-[10px] bg-sky-950 border border-sky-800 text-sky-300 px-1.5 py-0.2 rounded font-mono">Simulateur</span>
                   </button>
                 </li>
               </ul>

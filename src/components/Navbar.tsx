@@ -1,14 +1,12 @@
 import React from 'react';
-import { GraduationCap, ShieldCheck, FileText, Calculator, Compass, Search, Mail } from 'lucide-react';
+import { GraduationCap, ShieldCheck, FileText, Calculator, Compass, Search } from 'lucide-react';
 
 interface NavbarProps {
-  activeTab: 'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission' | 'uml';
-  setActiveTab: (tab: 'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission' | 'uml') => void;
+  activeTab: 'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission';
+  setActiveTab: (tab: 'home' | 'catalogue' | 'simulateur' | 'inscription' | 'suivi' | 'commission') => void;
   lang: 'fr' | 'ar' | 'tn';
   setLang: (lang: 'fr' | 'ar' | 'tn') => void;
   applicationsCount: number;
-  emailCount?: number;
-  onOpenEmailsModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,8 +15,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   lang,
   setLang,
   applicationsCount,
-  emailCount = 0,
-  onOpenEmailsModal,
 }) => {
   const getNavLabel = (key: string) => {
     switch (lang) {
@@ -30,7 +26,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           case 'inscription': return 'الترشح';
           case 'suivi': return 'تبع دوسيك';
           case 'commission': return 'اللجنة';
-          case 'uml': return 'Conception UML';
           default: return '';
         }
       case 'ar':
@@ -41,7 +36,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           case 'inscription': return 'التسجيل والترشح';
           case 'suivi': return 'متابعة الملف';
           case 'commission': return 'لجنة الانتقاء';
-          case 'uml': return 'مخططات UML';
           default: return '';
         }
       default:
@@ -52,7 +46,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           case 'inscription': return 'Postuler';
           case 'suivi': return 'Suivi Dossier';
           case 'commission': return 'Espace Jury';
-          case 'uml': return 'UML & Conception';
           default: return '';
         }
     }
@@ -126,17 +119,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {applicationsCount}
               </span>
             </button>
-            <button
-              onClick={() => setActiveTab('uml')}
-              className={`hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 py-1 flex items-center gap-1 ${
-                activeTab === 'uml' ? 'text-purple-700 font-semibold border-b-2 border-purple-700' : 'text-purple-600 font-medium'
-              }`}
-            >
-              <span>{getNavLabel('uml')}</span>
-              <span className="text-[10px] font-mono bg-purple-50 text-purple-700 border border-purple-200 px-1.5 py-0.2 rounded">
-                PFE
-              </span>
-            </button>
           </nav>
 
           {/* Zone 3: 1 primary action + Language switch */}
@@ -170,22 +152,6 @@ export const Navbar: React.FC<NavbarProps> = ({
                 عربي
               </button>
             </div>
-
-            {/* Email Notification Simulator Quick Button */}
-            {onOpenEmailsModal && (
-              <button
-                onClick={onOpenEmailsModal}
-                className="p-2 text-slate-600 hover:text-sky-700 bg-slate-100 hover:bg-sky-50 rounded-lg relative transition-colors"
-                title="Simulateur d'emails de confirmation"
-              >
-                <Mail className="w-4 h-4" />
-                {emailCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-sky-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center font-mono">
-                    {emailCount}
-                  </span>
-                )}
-              </button>
-            )}
 
             {/* Primary Action Button */}
             <button

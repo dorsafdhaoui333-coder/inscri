@@ -19,15 +19,6 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
     window.print();
   };
 
-  const handleExportPDF = () => {
-    const originalTitle = document.title;
-    document.title = `Recepisse_Inscription_${application.id}_${application.candidate.nom}_${application.candidate.prenom}`;
-    window.print();
-    setTimeout(() => {
-      document.title = originalTitle;
-    }, 1000);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto">
       <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto shadow-2xl border border-slate-200">
@@ -40,26 +31,17 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
-            <button
-              onClick={handleExportPDF}
-              className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
-              title="Exporter et enregistrer au format PDF"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Exporter en PDF</span>
-            </button>
+          <div className="flex items-center gap-3">
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-700"
-              title="Imprimer directement le document"
+              className="px-3.5 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
             >
               <Printer className="w-3.5 h-3.5" />
-              <span>Imprimer</span>
+              <span>Imprimer / Télécharger PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white transition-colors ml-1"
+              className="p-1.5 text-slate-400 hover:text-white transition-colors"
               aria-label="Fermer"
             >
               <X className="w-5 h-5" />
@@ -245,7 +227,7 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
         </div>
 
         {/* Modal Footer (no-print) */}
-        <div className="no-print p-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 rounded-b-2xl">
+        <div className="no-print p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between rounded-b-2xl">
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors"
@@ -253,24 +235,15 @@ export const ReceiptModal: React.FC<ReceiptModalProps> = ({
             Fermer
           </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleExportPDF}
-              className="px-4 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-xl transition-colors shadow-2xs flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-700" />
-              <span>Exporter en PDF</span>
-            </button>
-            <button
-              onClick={() => {
-                onClose();
-                onGoToTracking();
-              }}
-              className="px-5 py-2 text-xs font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-xl transition-colors shadow-xs"
-            >
-              Aller au Suivi de mon Dossier →
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              onClose();
+              onGoToTracking();
+            }}
+            className="px-5 py-2 text-xs font-semibold text-white bg-sky-700 hover:bg-sky-800 rounded-xl transition-colors shadow-xs"
+          >
+            Aller au Suivi de mon Dossier →
+          </button>
         </div>
       </div>
     </div>
